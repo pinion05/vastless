@@ -5,7 +5,8 @@
   "main": "gateway.ts",
   "scripts": {
     "start": "node --experimental-strip-types gateway.ts",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "init": "node cli/install.mjs"
   },
   "repository": {
     "type": "git",
@@ -23,5 +24,18 @@
   "devDependencies": {
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2"
-  }
+  },
+  "bin": {
+    "vastless": "./cli/install.mjs"
+  },
+  "files": [
+    "gateway.ts",
+    "vastless-ctl",
+    "setup-volume.sh",
+    "config.example.sh",
+    "public/",
+    "systemd/",
+    "cli/",
+    "legacy/"
+  ]
 }

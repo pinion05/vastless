@@ -62,7 +62,20 @@ legacy/             gateway-zero-dep.js — the original single-file, zero-depen
                     plain-Node version; feature-identical, kept for minimal installs
 ```
 
-## Setup
+## Quick start (installer)
+
+```bash
+npx pinion05/vastless init
+```
+
+Interactive installer: checks prereqs → finds volume+GPU combos on one
+machine → creates the volume → builds llama.cpp + downloads your GGUF onto
+it (10–20 min, one time) → writes `config.sh` → starts the gateway → smoke
+test. After that the URL is live forever.
+
+Manual setup below if you prefer.
+
+## Setup (manual)
 
 1. **Prereqs**: `vastai` CLI (`pipx install vastai`), API key set, SSH key
    registered. Node ≥ 18.

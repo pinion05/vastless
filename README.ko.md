@@ -59,7 +59,19 @@ legacy/             gateway-zero-dep.js — 의존성 0 원조 단일 파일 버
                     기능 동일하며 미니멀 설치용으로 보존
 ```
 
-## 설치
+## 빠른 시작 (인스톨러)
+
+```bash
+npx pinion05/vastless init
+```
+
+대화형 인스톨러: 사전요구 검사 → 같은 머신의 볼륨+GPU 조합 탐색 → 볼륨 생성 →
+llama.cpp 빌드 + GGUF 다운로드 (10~20분, 최초 1회) → `config.sh` 생성 → 게이트웨이
+기동 → 스모크. 이후 URL은 영구 활성.
+
+수동 설치는 아래.
+
+## 설치 (수동)
 
 1. **사전 준비**: `vastai` CLI (`pipx install vastai`), API 키 등록, SSH 키 등록. Node 18+.
 
