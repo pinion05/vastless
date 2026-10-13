@@ -5,8 +5,8 @@
 #   3) OpenAI URL = http://<이 머신>:8790/v1
 services:
   vastless:
-    build: .
-    # 또는 이미지: image: ghcr.io/pinion05/vastless:latest
+    image: ghcr.io/pinion05/vastless:latest
+    # 로컬 빌드로 쓰려면 위 줄 주석화하고 build: . 사용
     container_name: vastless
     restart: unless-stopped
     ports:

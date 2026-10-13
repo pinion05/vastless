@@ -129,9 +129,13 @@ Manual setup below if you prefer.
 The gateway is the only thing you install — any always-on box works
 (RAM ~200 MB, no GPU):
 
+No build needed — prebuilt image on GHCR:
+
 ```bash
-git clone https://github.com/pinion05/vastless && cd vastless
-cp config.example.sh config.sh   # fill OFFER_ID / VOLUME_ID / MODEL_PATH
+mkdir vastless && cd vastless
+curl -O https://raw.githubusercontent.com/pinion05/vastless/main/docker-compose.yml
+cp config.example.sh config.sh   # fill OFFER_ID / VOLUME_ID / MODEL_PATH (or run the installer to generate)
+echo "VASTLESS_IDLE_MIN=10" > .env
 docker compose up -d             # http://<host>:8790/v1
 ```
 
