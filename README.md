@@ -46,10 +46,14 @@ elasticity at spot-market prices:
 
 ```
 vastless-ctl        lifecycle: status | launch | stop (wraps vastai CLI)
-gateway.js          the whole product: HTTP server, proxy, autolaunch/idle-destroy, dashboard
+gateway.ts          the whole product — Hono + TypeScript (needs Node >= 22.6, no build step:
+                    `npm install && npm start`)
+public/index.html   dashboard UI served by the gateway
 setup-volume.sh     one-time: build llama.cpp + download GGUF onto the volume
 config.example.sh   copy to config.sh and fill in your IDs (gitignored)
-systemd/            user units for gateway + (optional) OCI reverse tunnel
+systemd/            user units for the gateway
+legacy/             gateway-zero-dep.js — the original single-file, zero-dependency
+                    plain-Node version; feature-identical, kept for minimal installs
 ```
 
 ## Setup
@@ -110,6 +114,14 @@ systemd/            user units for gateway + (optional) OCI reverse tunnel
 | `VASTLESS_MODEL_ID` | `nex` | model id advertised at `/v1/models` |
 
 ## Hard-won notes (read before operating)
+
+**Hono-specific (if hacking on gateway.ts):**
+- `c.req.raw` is a **web** Request, not a Node stream — read the body via
+  `await c.req.arrayBuffer()`, never `.on("data")`.
+- Returning a `Response` whose body is `Readable.toWeb(upstream)` is the
+  hono-native way to stream a proxy. Writing directly to `c.res.writeHead`
+  collides with @hono/node-server's own response cycle
+  (`ERR_HTTP_HEADERS_SENT`).
 
 - **CUDA image must match GPU arch** — Blackwell (RTX 50xx) needs CUDA ≥ 12.8;
   a 12.4 image fails nvcc with cryptic compiler-ID errors.

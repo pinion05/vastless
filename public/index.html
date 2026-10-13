@@ -1,0 +1,123 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>vastless dashboard</title>
+<style>
+:root{--bg:#0b0e14;--card:#141a24;--line:#232c3b;--tx:#e6edf3;--mut:#8b98a9;--acc:#4f8cff;--ok:#3fb950;--warn:#d29922;--err:#f85149}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--tx);font:14px/1.6 -apple-system,'Segoe UI','Noto Sans KR',sans-serif;padding:24px;max-width:860px;margin:0 auto}
+h1{font-size:20px;margin-bottom:4px} .sub{color:var(--mut);font-size:12px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stat{display:inline-flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);padding:8px 12px;border-radius:8px;font-size:13px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--err)} .dot.none{background:var(--mut)}
+button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer}
+button.stop{background:var(--err)} button:disabled{opacity:.4;cursor:wait}
+label.tog{display:flex;gap:8px;align-items:center;color:var(--mut);font-size:12px;cursor:pointer}
+code,pre{font:12px/1.5 ui-monospace,monospace}
+.urlbox{display:flex;gap:8px;margin-top:10px}
+.urlbox input{flex:1;background:var(--bg);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:9px 12px;font:13px ui-monospace,monospace}
+.copy{background:var(--line);color:var(--tx);border:0;border-radius:8px;padding:9px 14px;cursor:pointer;font-size:12px}
+.hint{color:var(--mut);font-size:12px;margin-top:8px}
+.mut{color:var(--mut)} .mt{margin-top:12px}
+#curl{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;color:var(--mut);white-space:pre}
+</style></head><body>
+<h1>vastless dashboard</h1>
+<div class="sub">vast.ai spot GPU · OpenAI-compatible auto-launch gateway</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between">
+    <div class="row" id="stats"></div>
+    <div class="row">
+      <button id="btnLaunch">🚀 Launch</button>
+      <button id="btnStop" class="stop" style="display:none">■ Stop</button>
+      <label class="tog"><input type="checkbox" id="autoStop" checked> 10분 무응답 시 자동파기</label>
+    </div>
+  </div>
+  <div class="hint" id="detail"></div>
+</div>
+
+<div class="card">
+  <b>OpenAI 호환 API (고정 URL)</b>
+  <div class="urlbox"><input id="apiurl" readonly><button class="copy" onclick="cp()">복사</button></div>
+  <div class="hint">이 URL은 vast IP가 바뀌어도 그대로 — 게이트웨이가 현재 인스턴스로 프록시합니다.</div>
+  <div class="mt" id="curl"></div>
+</div>
+
+<div class="card" style="display:flex;flex-direction:column;height:420px">
+  <b>💬 Chat</b>
+  <div id="chatlog" style="flex:1;overflow-y:auto;margin-top:10px;padding-right:6px"></div>
+  <div class="row" style="margin-top:10px">
+    <input id="chatin" placeholder="메시지 입력 (Enter)" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:10px 12px;font-size:14px">
+    <button id="btnSend">전송</button>
+  </div>
+</div>
+
+<script>
+let timer;
+const $=id=>document.getElementById(id);
+function fmtDur(s){const h=Math.floor(s/3600),m=Math.floor(s%3600/60),sec=Math.floor(s%60);
+  return h>0?h+'시간 '+m+'분':(m>0?m+'분 '+sec+'초':sec+'초');}
+const history=[];
+function addMsg(role,text){
+  const el=document.createElement('div');
+  el.style.cssText='margin:6px 0;display:flex;'+(role==='user'?'justify-content:flex-end':'');
+  const b=document.createElement('div');
+  b.style.cssText='max-width:78%;padding:9px 13px;border-radius:12px;white-space:pre-wrap;line-height:1.55;font-size:14px;'+
+    (role==='user'?'background:var(--acc);color:#fff;border-bottom-right-radius:3px':'background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:3px');
+  b.textContent=text;
+  el.appendChild(b);$('chatlog').appendChild(el);
+  $('chatlog').scrollTop=$('chatlog').scrollHeight;
+}
+async function send(){
+  const q=$('chatin').value.trim(); if(!q) return;
+  $('chatin').value=''; addMsg('user',q); history.push({role:'user',content:q});
+  const t0=performance.now(); addMsg('assistant','…');
+  const last=$('chatlog').lastChild.firstChild;
+  try{
+    const r=await fetch('/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'nex',messages:history.slice(-20),max_tokens:1024,temperature:0.7})});
+    const d=await r.json();
+    const dt=((performance.now()-t0)/1000).toFixed(1);
+    if(d.choices){const a=d.choices[0].message.content;history.push({role:'assistant',content:a});
+      last.textContent=a+'  ·  '+dt+'s';}
+    else last.textContent='에러: '+JSON.stringify(d).slice(0,150);
+  }catch(e){last.textContent='에러: '+e.message;}
+  $('chatlog').scrollTop=$('chatlog').scrollHeight;
+}
+$('btnSend').onclick=send;
+$('chatin').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing)send();});
+function render(s){
+  const dot=function(c){return '<span class="dot '+c+'"></span>';};
+  const map={ready:[dot('ok'),'READY — API 사용 가능'],starting:[dot('warn'),'기동 중… (콜드 ~40s)'],running:[dot('warn'),'부팅 중…'],loading:[dot('warn'),'이미지 로딩…'],none:[dot('none'),'정지 (과금 0)'],gone:[dot('err'),'인스턴스 소멸 — 재런치 필요']};
+  const pair=map[s.phase]||[dot('none'),s.phase];
+  const d=pair[0], t=pair[1];
+  $('stats').innerHTML='<span class="stat">'+d+t+'</span>'+
+    (s.dph?'<span class="stat">$'+s.dph.toFixed(3)+'/hr</span>':'')+
+    (s.uptime?'<span class="stat">⏱ '+fmtDur(s.uptime)+'</span>':'')+
+    (s.balance!==null&&s.balance!==undefined&&s.balance!==''?'<span class="stat">💰 $'+s.balance+'</span>':'')+
+    (s.iid&&s.iid!='-'?'<span class="stat">IID '+s.iid+'</span>':'')+
+    (s.ip?'<span class="stat">'+s.ip+(s.port?':'+s.port:'')+'</span>':'');
+  $('detail').textContent = s.phase==='ready' ? '연결 정상 · 269 t/s (EN) / 261 t/s (KO) 실측' :
+    s.phase==='none' ? 'Launch를 누르면 37초 내 서버가 뜹니다 (볼륨 영구빌드).' : JSON.stringify(s);
+  const running=!['none','gone'].includes(s.phase);
+  const upStr = s.uptime ? fmtDur(s.uptime) : '';
+  $('btnLaunch').disabled=running; $('btnLaunch').textContent = running ? '🚀 Running' : '🚀 Launch';
+  $('btnStop').style.display=running?'':'none';
+  const loc=location.origin;
+  $('apiurl').value=loc+'/v1';
+  $('curl').textContent=['curl '+loc+'/v1/chat/completions','-H "Content-Type: application/json"','-d '+JSON.stringify({model:'nex',messages:[{role:'user',content:'안녕'}]})].join(String.fromCharCode(10));
+}
+async function poll(){ try{ render(await (await fetch('/api/status')).json()); }catch(e){} }
+let acting=false;
+async function act(path,btn,label){ 
+  if(acting) return; acting=true;
+  const old=btn.textContent; btn.textContent=label||'…처리 중'; btn.disabled=true;
+  try{ await fetch(path,{method:'POST'}); }catch(e){} 
+  finally{ acting=false; btn.textContent=old; poll(); }
+}
+$('btnLaunch').onclick=e=>act('/api/launch',e.target,'🚀 생성 중… (최대 3분)');
+$('btnStop').onclick=e=>act('/api/stop',e.target,'■ 파기 중…');
+function cp(){ navigator.clipboard.writeText($('apiurl').value); event.target.textContent='복사됨!'; setTimeout(()=>event.target.textContent='복사',1200); }
+poll(); timer=setInterval(poll,5000);
+</script></body></html>

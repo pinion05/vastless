@@ -1,0 +1,27 @@
+{
+  "name": "vastless",
+  "version": "0.2.0",
+  "description": "Serverless OpenAI-compatible LLM on vast.ai spot GPUs",
+  "main": "gateway.ts",
+  "scripts": {
+    "start": "node --experimental-strip-types gateway.ts",
+    "check": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pinion05/vastless.git"
+  },
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/pinion05/vastless/issues"
+  },
+  "homepage": "https://github.com/pinion05/vastless#readme",
+  "dependencies": {
+    "@hono/node-server": "^2.1.4",
+    "hono": "^4.13.13"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}
