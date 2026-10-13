@@ -1,5 +1,5 @@
 {
-  "name": "vastless",
+  "name": "@npmc_5/vastless",
   "version": "0.2.0",
   "description": "Serverless OpenAI-compatible LLM on vast.ai spot GPUs",
   "main": "gateway.ts",
@@ -37,5 +37,6 @@
     "systemd/",
     "cli/",
     "legacy/"
-  ]
+  ],
+  "license": "MIT"
 }
