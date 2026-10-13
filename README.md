@@ -1,4 +1,10 @@
+<p align="center">
+  <img src="assets/banner.png" alt="vastless — serverless GPU orchestration platform" width="720">
+</p>
+
 # vastless — serverless OpenAI-compatible LLM on vast.ai spot GPUs
+
+[English](README.md) | [한국어](README.ko.md)
 
 **Call the API → GPU boots itself. Idle → GPU destroys itself. Pay only for seconds used.**
 
