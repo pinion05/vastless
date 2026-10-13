@@ -4,6 +4,8 @@
 
 # vastless — serverless OpenAI-compatible LLM on vast.ai spot GPUs
 
+[![npm](https://img.shields.io/npm/v/@npmc_5/vastless)](https://www.npmjs.com/package/@npmc_5/vastless) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 [English](README.md) | [한국어](README.ko.md)
 
 **Call the API → GPU boots itself. Idle → GPU destroys itself. Pay only for seconds used.**
@@ -65,7 +67,7 @@ legacy/             gateway-zero-dep.js — the original single-file, zero-depen
 ## Quick start (installer)
 
 ```bash
-npx pinion05/vastless init
+npx @npmc_5/vastless init
 ```
 
 Interactive installer: checks prereqs → finds volume+GPU combos on one

@@ -62,7 +62,7 @@ legacy/             gateway-zero-dep.js — 의존성 0 원조 단일 파일 버
 ## 빠른 시작 (인스톨러)
 
 ```bash
-npx pinion05/vastless init
+npx @npmc_5/vastless init
 ```
 
 대화형 인스톨러: 사전요구 검사 → 같은 머신의 볼륨+GPU 조합 탐색 → 볼륨 생성 →
