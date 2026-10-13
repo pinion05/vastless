@@ -118,6 +118,19 @@ llama.cpp 빌드 + GGUF 다운로드 (10~20분, 최초 1회) → `config.sh` 생
        nex: {supports_reasoning: true, supports_tools: true, context_window: 262144}
    ```
 
+## Docker (프록시 호스트 권장)
+
+게이트웨이만 설치하면 된다 — 항시 켜진 아무 머신이면 충분 (RAM ~200MB, GPU 불필요):
+
+```bash
+git clone https://github.com/pinion05/vastless && cd vastless
+cp config.example.sh config.sh   # OFFER_ID / VOLUME_ID / MODEL_PATH 채우기
+docker compose up -d             # http://<호스트>:8790/v1
+```
+
+compose가 vast API 키를 읽기전용 마운트하고, config.sh에 볼륨/오퍼 ID가 들어간다.
+헬스체크·재시작 정책 포함.
+
 ## 환경변수
 
 | 변수 | 기본값 | 의미 |

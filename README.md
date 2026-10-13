@@ -124,6 +124,20 @@ Manual setup below if you prefer.
        nex: {supports_reasoning: true, supports_tools: true, context_window: 262144}
    ```
 
+## Docker (recommended for the proxy host)
+
+The gateway is the only thing you install — any always-on box works
+(RAM ~200 MB, no GPU):
+
+```bash
+git clone https://github.com/pinion05/vastless && cd vastless
+cp config.example.sh config.sh   # fill OFFER_ID / VOLUME_ID / MODEL_PATH
+docker compose up -d             # http://<host>:8790/v1
+```
+
+The compose file mounts your vast API key read-only; `config.sh` carries
+your volume/offer IDs. Health-check and restart policy included.
+
 ## Environment
 
 | var | default | meaning |

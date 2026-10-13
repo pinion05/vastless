@@ -1,0 +1,22 @@
+# vastless gateway — 프록시 호스트 배포
+# 사용법:
+#   1) vastless-ctl이 참조하는 config.sh를 호스트에 준비 (config.example.sh 복사 후 ID 채움)
+#   2) docker compose up -d
+#   3) OpenAI URL = http://<이 머신>:8790/v1
+services:
+  vastless:
+    build: .
+    # 또는 이미지: image: ghcr.io/pinion05/vastless:latest
+    container_name: vastless
+    restart: unless-stopped
+    ports:
+      - "8790:8790"
+    volumes:
+      - ./config.sh:/app/config.sh:ro                        # 개인 설정 (OFFER_ID, VOLUME_ID, ...)
+      - ~/.config/vastai/vast_api_key:/root/.config/vastai/vast_api_key:ro  # vast API 키
+      - vastless-data:/data                                  # 인스턴스 포인터 영속화
+    environment:
+      # VASTLESS_IDLE_MIN: "10"          # 유휴 파기 분 (기본 10)
+      # VASTLESS_MODEL_ID: "nex"
+volumes:
+  vastless-data:

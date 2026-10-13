@@ -6,7 +6,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/config.sh"
 
-VASTAI="${VASTAI:-$HOME/.local/bin/vastai}"
+# VASTAI 탐지: env → 절대경로 → PATH
+if [ -z "${VASTAI:-}" ]; then
+  if [ -x "$HOME/.local/bin/vastai" ]; then VASTAI="$HOME/.local/bin/vastai"
+  elif command -v vastai >/dev/null 2>&1; then VASTAI="$(command -v vastai)"
+  else echo "vastai CLI not found" >&2; exit 1; fi
+fi
 STATE="${STATE:-$HOME/..vastless_state.json}"
 
 # 살아있는 vastless 인스턴스 전수조회 → "iid|status|ip|port|dph" (한 줄당 하나)
