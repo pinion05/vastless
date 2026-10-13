@@ -15,8 +15,8 @@ services:
       - ./config.sh:/app/config.sh:ro                        # 개인 설정 (OFFER_ID, VOLUME_ID, ...)
       - ~/.config/vastai/vast_api_key:/root/.config/vastai/vast_api_key:ro  # vast API 키
       - vastless-data:/data                                  # 인스턴스 포인터 영속화
-    environment:
-      # VASTLESS_IDLE_MIN: "10"          # 유휴 파기 분 (기본 10)
-      # VASTLESS_MODEL_ID: "nex"
+    # environment:                      # 필요시 주석 해제
+    #   VASTLESS_IDLE_MIN: "10"         # 유휴 파기 분 (기본 10)
+    #   VASTLESS_MODEL_ID: "nex"
 volumes:
   vastless-data:
