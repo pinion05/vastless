@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# vastless-ctl — vast.ai GPU 인스턴스 수명주기 제어 (범용)
+# 설정은 config.sh에서 읽는다 (리포지토리에 커밋하지 않는 개인 값).
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/config.sh"
+
+VASTAI="${VASTAI:-$HOME/.local/bin/vastai}"
+STATE="${STATE:-$HOME/..vastless_state.json}"
+
+# 살아있는 vastless 인스턴스 전수조회 → "iid|status|ip|port|dph" (한 줄당 하나)
+live() {
+  $VASTAI show instances --raw 2>/dev/null | python3 -c "
+import json,sys
+try: insts=json.load(sys.stdin)
+except: insts=[]
+for d in insts:
+    st=d.get('actual_status') or d.get('status') or ''
+    if st in ('exited','dead'): continue
+    ip=d.get('public_ipaddr') or ''
+    p=(d.get('ports') or {}).get('${LLAMA_PORT}/tcp',[{}])[0].get('HostPort') or ''
+    print(f\"{d.get('id')}|{st}|{ip}|{p}|{d.get('dph_total',0)}\")
+" | head -3
+}
+
+save_state() { # iid ip port
+  printf '{"iid":%s,"ip":"%s","port":"%s"}' "$1" "${2:-}" "${3:-}" > "$STATE"
+}
+
+cmd_status() {
+  L=$(live)
+  BAL=$($VASTAI show user --raw 2>/dev/null | python3 -c "
+import json,sys
+try: d=json.load(sys.stdin); print(round(d.get('credit') or 0,2))
+except: print('')" 2>/dev/null || echo "")
+  if [ -z "$L" ]; then
+    echo "state:none iid:- bal:$BAL"
+  else
+    FIRST=$(echo "$L" | head -1)
+    IID=$(echo "$FIRST" | cut -d'|' -f1)
+    ST=$(echo "$FIRST" | cut -d'|' -f2)
+    IP=$(echo "$FIRST" | cut -d'|' -f3)
+    PORT=$(echo "$FIRST" | cut -d'|' -f4)
+    DPH=$(echo "$FIRST" | cut -d'|' -f5)
+    UP=$($VASTAI show instances --raw 2>/dev/null | python3 -c "
+import json,sys
+try:
+    for i in json.load(sys.stdin):
+        if i.get('id')==$IID: print(int((i.get('uptime_mins') or 0)*60)); break
+except: print(0)" 2>/dev/null || echo 0)
+    [ -n "$IP" ] && [ -n "$PORT" ] && save_state "$IID" "$IP" "$PORT"
+    echo "state:$ST|$IP|$PORT|$DPH iid:$IID up:$UP bal:$BAL"
+  fi
+}
+
+cmd_launch() {
+  L=$(live)
+  if [ -n "$L" ]; then
+    echo "$L" | head -1 | cut -d'|' -f1
+    exit 0
+  fi
+  OUT=$($VASTAI create instance "$OFFER_ID" --image "$IMAGE" --disk "$DISK_GB" --ssh \
+    --link-volume "$VOLUME_ID" --mount-path "$MOUNT_PATH" --env "-p ${LLAMA_PORT}:${LLAMA_PORT}" \
+    --onstart-cmd "$ONSTART" --raw 2>/dev/null)
+  echo "$OUT" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+iid=d.get('instance') or d.get('new_contract')
+if iid: print(iid)
+else: sys.exit(1)"
+}
+
+cmd_stop() {
+  L=$(live)
+  [ -z "$L" ] && { echo "no live instances"; rm -f "$STATE"; exit 0; }
+  while IFS= read -r line; do
+    IID=$(echo "$line" | cut -d'|' -f1)
+    [ -n "$IID" ] && $VASTAI destroy instance $IID -y 2>&1 | tail -1
+  done <<< "$L"
+  rm -f "$STATE"
+}
+
+case "${1:-status}" in
+  status) cmd_status ;;
+  launch) cmd_launch ;;
+  stop)   cmd_stop ;;
+esac

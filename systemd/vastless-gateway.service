@@ -1,0 +1,12 @@
+[Unit]
+Description=vastless gateway (OpenAI-compatible auto-launch proxy)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/node %h/dev/vastless/gateway.js
+Restart=always
+RestartSec=5
+Environment=VASTLESS_PORT=8790
+
+[Install]
+WantedBy=default.target
