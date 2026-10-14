@@ -124,6 +124,18 @@ Manual setup below if you prefer.
        nex: {supports_reasoning: true, supports_tools: true, context_window: 262144}
    ```
 
+## Autonomous provisioning (v0.3)
+
+The gateway now owns the full lifecycle — not just launch/destroy:
+
+- **Budget search** — `VASTLESS_MAX_USD_HR` (default 0.80) caps the hourly rate; candidates are filtered by VRAM floor (`VASTLESS_MIN_VRAM_GB`, default 24) and reliability > 0.97.
+- **Two-tier fallback chain** — tier 1: offers on the machine hosting your seeded volume (instant attach, ~40s cold start). Tier 2: volume-hosting machines elsewhere (one-time reseed: llama.cpp build + model download, 10–20 min, then it's a tier-1 machine forever).
+- **Stall guard** — instances stuck in `loading` are destroyed after `VASTLESS_LOADING_TIMEOUT_MIN` (default 8) and the next candidate is tried. Failed offers are remembered per session.
+- **State machine + live dashboard** — phases (idle/launching/seeding/ready/failed), per-event log, spend tracking, offer chain with manual pin ("선택") from the web UI.
+- VRAM-aware context: 24 GB cards serve 128K ctx, ≥31 GB serve 256K (measured).
+
+Why a listener proxy at all: scale-to-zero + fixed URL needs an always-on endpoint that owns instance state — see architecture above.
+
 ## Docker (recommended for the proxy host)
 
 The gateway is the only thing you install — any always-on box works

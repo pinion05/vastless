@@ -1,6 +1,6 @@
 {
   "name": "@npmc_5/vastless",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Serverless OpenAI-compatible LLM on vast.ai spot GPUs",
   "main": "gateway.ts",
   "scripts": {

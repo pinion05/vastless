@@ -9,6 +9,7 @@ import http from "http";
 import os from "os";
 import path from "path";
 import { Readable } from "stream";
+import * as provision from "./provision.ts";
 
 // ── config ──
 const PORT = parseInt(process.env.VASTLESS_PORT || "8790", 10);
@@ -165,7 +166,15 @@ const app = new Hono();
 app.get("/", (c) => c.html(UI));
 app.get("/index.html", (c) => c.html(UI));
 
-app.get("/api/status", async (c) => c.json(await ctlStatus()));
+app.get("/api/status", async (c) => c.json(await provision.statusSnapshot()));
+app.get("/api/chain", async (c) => { const s = provision.readState(); await provision.refreshChain(s); return c.json(s); });
+app.post("/api/select", async (c) => {
+  const { offer_id } = await c.req.json().catch(() => ({}));
+  const s = provision.readState();
+  s.pinned_offer = offer_id ?? null;
+  provision.writeState(s);
+  return c.json({ pinned: s.pinned_offer });
+});
 
 app.post("/api/launch", async (c) => {
   const s = await ctlStatus();
@@ -178,7 +187,7 @@ app.post("/api/launch", async (c) => {
   return c.json({ launched: true, iid });
 });
 
-app.post("/api/stop", async (c) => { await ctlStop(); return c.json({ stopped: true }); });
+app.post("/api/stop", async (c) => c.json({ stopped: await provision.stopAll() }));
 
 // /v1/models — static, instant, never wakes the GPU
 app.get("/v1/models", (c) =>
@@ -194,11 +203,15 @@ app.get("/v1/models", (c) =>
 // /v1/* — auto-launch proxy
 app.all("/v1/*", async (c) => {
   lastHit = Date.now();
-  const ok = await ensureUp();
-  if (!ok) return c.json({ error: { message: `auto-launch failed/timeout (${READY_TIMEOUT_MS / 1000}s)`, type: "autolaunch_timeout" } }, 504);
-  const st = readState();
-  if (!st?.ip || !st?.port) return c.json({ error: { message: "state pointer missing", type: "internal" } }, 500);
-  const resp = await forwardUpstream(c, { ip: st.ip, port: st.port });
+  const st = await provision.statusSnapshot();
+  if (st.phase !== "ready") {
+    const ok = await provision.ensureServing(provision.readState());
+    if (!ok) return c.json({ error: { message: "provision failed: " + (provision.readState().err || "no candidate in budget"), type: "provision_failed" } }, 503);
+  }
+  const st2 = provision.readState();
+  const inst = st2.instance;
+  if (!inst?.ip || !inst.port) return c.json({ error: { message: "state pointer missing", type: "internal" } }, 500);
+  const resp = await forwardUpstream(c, { ip: inst.ip, port: inst.port });
   if (!resp) return c.json({ error: { message: "forward produced no response", type: "internal" } }, 502);
   return resp;
 });
@@ -211,8 +224,8 @@ setInterval(async () => {
   const idle = Date.now() - lastHit;
   if (idle < IDLE_MIN * 60_000) return;
   if (activeStreams > 0) { console.log(`[autostop] idle but ${activeStreams} stream(s) in flight — holding`); return; }
-  const s = await ctlStatus();
-  if (["none", "gone"].includes(s.phase)) return;
-  console.log(`[autostop] ${Math.round(idle / 60000)}min idle, 0 streams → destroying (iid ${s.iid})`);
-  await ctlStop();
+  const s = await provision.statusSnapshot();
+  if (["idle"].includes(s.phase) || !s.instance) return;
+  console.log(`[autostop] ${Math.round(idle / 60000)}min idle, 0 streams → destroying (iid ${s.instance.iid})`);
+  await provision.stopAll();
 }, 60_000);

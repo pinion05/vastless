@@ -65,7 +65,8 @@ cmd_launch() {
     echo "$L" | head -1 | cut -d'|' -f1
     exit 0
   fi
-  OUT=$($VASTAI create instance "$OFFER_ID" --image "$IMAGE" --disk "$DISK_GB" --ssh \
+  OFFER="${1:-$OFFER_ID}"
+  OUT=$($VASTAI create instance "$OFFER" --image "$IMAGE" --disk "$DISK_GB" --ssh \
     --link-volume "$VOLUME_ID" --mount-path "$MOUNT_PATH" --env "-p ${LLAMA_PORT}:${LLAMA_PORT}" \
     --onstart-cmd "$ONSTART" --raw 2>/dev/null)
   echo "$OUT" | python3 -c "

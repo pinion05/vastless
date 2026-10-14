@@ -118,6 +118,16 @@ llama.cpp 빌드 + GGUF 다운로드 (10~20분, 최초 1회) → `config.sh` 생
        nex: {supports_reasoning: true, supports_tools: true, context_window: 262144}
    ```
 
+## 자동 프로비저닝 (v0.3)
+
+게이트웨이가 라이프사이클 전체를 소유한다 — 런치/파기만이 아닌:
+
+- **예산 검색** — `VASTLESS_MAX_USD_HR` (기본 0.80)가 시간당 요금 상한. VRAM 하한(`VASTLESS_MIN_VRAM_GB`, 기본 24)과 신뢰도 >0.97로 후보 필터.
+- **2계층 폴백 체인** — 1계층: 시딩된 볼륨을 보유한 머신의 오퍼 (즉시 부착, 콜드 ~40초). 2계층: 다른 볼륨 호스팅 머신 (일회성 재시딩: llama.cpp 빌드 + 모델 다운로드 10~20분, 이후 영구 1계층).
+- **스톨 가드** — `loading`에 걸린 인스턴스는 `VASTLESS_LOADING_TIMEOUT_MIN`(기본 8) 후 파기하고 다음 후보 시도. 실패 오퍼는 세션 내 기억.
+- **상태 머신 + 실시간 대시보드** — phase(idle/launching/seeding/ready/failed), 이벤트 로그, 지출 추적, 웹 UI에서 오퍼 체인 확인·수동 선택('선택').
+- VRAM별 컨텍스트: 24GB 카드 128K, 31GB+ 256K (실측 기준).
+
 ## Docker (프록시 호스트 권장)
 
 게이트웨이만 설치하면 된다 — 항시 켜진 아무 머신이면 충분 (RAM ~200MB, GPU 불필요):
